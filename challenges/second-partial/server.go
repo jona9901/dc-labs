@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"context"
 	"strings"
+	"encoding/base64"
+//	"github.com/gorilla/mux"
 )
 
 func newRoute(method, pattern string, handler http.HandlerFunc) route {
@@ -26,7 +28,7 @@ func getField(r *http.Request, index int) string {
     return fields[index]
 }
 
-var routes = [] route {
+var routes = []route {
 	newRoute("GET", "/", home),
 	newRoute("GET", "/login", login),
 	newRoute("GET", "/logout", logout),
@@ -35,11 +37,37 @@ var routes = [] route {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
+
 	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Login")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+	if len(s) != 2 {
+		http.Error(w, "Not authorized", 401)
+		return
+	}
+
+	b, err := base64.StdEncoding.DecodeString(s[1])
+	if err != nil {
+		http.Error(w, err.Error(), 401)
+		return
+	}
+
+	pair := strings.SplitN(string(b), ":", 2)
+	if len(pair) != 2 {
+		http.Error(w, "Not authorized", 401)
+		return
+	}
+
+	if pair[0] != "username" || pair[1] != "password" {
+		http.Error(w, "Not authorized", 401)
+		return
+	}
+	fmt.Fprintf(w, "Login %s", r)
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {

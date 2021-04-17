@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net/http"
-	"regexp"
-	"context"
-	"strings"
+	"github.com/gin-gonic/gin"
+//	"log"
+//	"net/http"
+//	"regexp"
+//	"context"
+//	"strings"
 )
 
 /*
@@ -19,73 +20,75 @@ var routes = [] route {
 }
 */
 
-/*
-func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
-}
+func login(c *gin.Context) {						// asign token
+	user, _, _ := c.Request.BasicAuth()				// If needed Basic auth returns: (username, password string, ok bool)
 
-func login(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Login")
-}
+	message := fmt.Sprintf("Hi %s, welcome to the DPIP system", user)
 
-func logout(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Logout")
-}
-
-func upload(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Upload")
-}
-
-func status(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Status")
-}
-
-func Serve(w http.ResponseWriter, r *http.Request) {
-    var allow []string
-    for _, route := range routes {
-        matches := route.regex.FindStringSubmatch(r.URL.Path)
-        if len(matches) > 0 {
-            if r.Method != route.method {
-                allow = append(allow, route.method)
-                continue
-            }
-            ctx := context.WithValue(r.Context(), ctxKey{}, matches[1:])
-            route.handler(w, r.WithContext(ctx))
-            return
-        }
-    }
-    if len(allow) > 0 {
-        w.Header().Set("Allow", strings.Join(allow, ", "))
-        http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
-        return
-    }
-    http.NotFound(w, r)
-}*/
-
-func login(c *gin.Context) {
 	c.JSON(200, gin.H {
-		"message": "Hi @username, welcome to the DPIP system",	// add the user variable
+		"message": message,
 		"token": "ojIE89GzFw",					// add the token
+	})
+}
+
+type tokenHeader struct {
+	Token string `header:"Authorization"`
+}
+
+func logout(c *gin.Context) {
+	h := tokenHeader{}
+
+	if err := c.ShouldBindHeader(&h); err != nil {
+		c.JSON(700, err)						// err 700 -> header error
+	}
+
+	c.JSON(200, gin.H {
+		//"token": h.Token,  						// this is how you acces a token
+		"message": "Bye @username, your token has been revoked",	// add the user variable
+	})
+}
+
+type uploadBody struct {
+	Body string `form:"data"`
+}
+
+func upload(c *gin.Context) {
+	h := tokenHeader{}
+	//body := c.Clone() //c.Request.Body
+//	body := c.FormValue("Body")
+	data := uploadStruct{}
+
+	if err := c.ShouldBindHeader(&h); err != nil {
+		c.JSON(700, err)						// err 700 -> header error
+	}
+
+	if err := c.ShouldBind(&data); err != nil {
+		c.JSON(800, err)						// err 800 -> body error
+	}
+
+	c.JSON(200, gin.H {
+		"message": data, // "Hi @username, welcome to the DPIP system",	// add the user variable
+		"filename": "image.png",				// add the filename variable
+		"size":  "500kb",					// add the file size
+	})
+}
+
+func status(c *gin.Context) {
+	c.JSON(200, gin.H {
+		"message": "Hi #username, the DPIP System is Up and Running",	// add the user variable
+		"time": "2015-03-07 11:06:39",					// add the token
 	})
 }
 
 func main() {
 	fmt.Printf("Starting server at port 8080\n")
 
-	r := gin.Default()
+	server := gin.Default()
 
-	r.GET("/login", login)
-	r.GET("/logout", logout)
-	r.GET("/upload", upload)
-	r.GET("/status", status)
+	server.GET("/login", login)
+	server.GET("/logout", logout)
+	server.GET("/upload", upload)
+	server.GET("/status", status)
 
-	r.Run()
-	/*fmt.Printf("Starting server at port 8080\n")
-
-	http.HandleFunc("/", Serve)
-
-
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		 log.Fatal(err)
-	}*/
+	server.Run()
 }
