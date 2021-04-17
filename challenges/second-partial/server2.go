@@ -9,23 +9,7 @@ import (
 	"strings"
 )
 
-func newRoute(method, pattern string, handler http.HandlerFunc) route {
-	return route{method, regexp.MustCompile("^" + pattern + "$"), handler}
-}
-
-type route struct {
-	method  string
-	regex   *regexp.Regexp
-	handler http.HandlerFunc
-}
-
-type ctxKey struct{}
-
-func getField(r *http.Request, index int) string {
-    fields := r.Context().Value(ctxKey{}).([]string)
-    return fields[index]
-}
-
+/*
 var routes = [] route {
 	newRoute("GET", "/", home),
 	newRoute("GET", "/login", login),
@@ -33,7 +17,9 @@ var routes = [] route {
 	newRoute("GET", "/upload", upload),
 	newRoute("GET", "/status", status),
 }
+*/
 
+/*
 func home(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
 }
@@ -74,15 +60,32 @@ func Serve(w http.ResponseWriter, r *http.Request) {
         return
     }
     http.NotFound(w, r)
+}*/
+
+func login(c *gin.Context) {
+	c.JSON(200, gin.H {
+		"message": "Hi @username, welcome to the DPIP system",	// add the user variable
+		"token": "ojIE89GzFw",					// add the token
+	})
 }
 
 func main() {
 	fmt.Printf("Starting server at port 8080\n")
+
+	r := gin.Default()
+
+	r.GET("/login", login)
+	r.GET("/logout", logout)
+	r.GET("/upload", upload)
+	r.GET("/status", status)
+
+	r.Run()
+	/*fmt.Printf("Starting server at port 8080\n")
 
 	http.HandleFunc("/", Serve)
 
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		 log.Fatal(err)
-	}
+	}*/
 }
