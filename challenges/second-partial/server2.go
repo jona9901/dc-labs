@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"time"
+	"net/http"
 	"github.com/gin-gonic/gin"
-//	"log"
-//	"net/http"
-//	"regexp"
-//	"context"
-//	"strings"
+	"github.com/dgrijalva/jwt-go"
 )
 
 /*
@@ -20,14 +19,67 @@ var routes = [] route {
 }
 */
 
-func login(c *gin.Context) {						// asign token
-	user, _, _ := c.Request.BasicAuth()				// If needed Basic auth returns: (username, password string, ok bool)
+type User struct {
+	Username string
+	Password string
+	Token string
+}
 
-	message := fmt.Sprintf("Hi %s, welcome to the DPIP system", user)
+var loggedUsers []*User
+
+/*
+A sample user
+*/
+
+var defaultUser = User {
+	Username: "username",
+	Password: "password",
+}
+
+func newUser(username string, password string) *User{
+	token, _ := createToken(username)				// handle error
+
+	u := User{
+		Username: username,
+		Password: password,
+		Token: token,
+	}
+	return &u
+}
+
+func createToken(username string) (string, error) {
+	var err error
+
+	os.Setenv("ACCESS_SECRET", "jdnfksdmfksd")			// ad to env file
+
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+	atClaims["username"] = username
+	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func login(c *gin.Context) {						// asign token
+	username, password, _ := c.Request.BasicAuth()				// If needed Basic auth returns: (username, password string, ok bool)
+
+	if username != defaultUser.Username || password != defaultUser.Password {
+		c.JSON(http.StatusUnauthorized, "Please provide valid credentials")
+		return
+	}
+
+	user := newUser(username, password)
+	loggedUsers = append(loggedUsers, user)
+
+	message := fmt.Sprintf("Hi %s welcome to the DPIP system", user.Username)
 
 	c.JSON(200, gin.H {
 		"message": message,
-		"token": "ojIE89GzFw",					// add the token
+		"token": user.Token,
 	})
 }
 
@@ -42,10 +94,28 @@ func logout(c *gin.Context) {
 		c.JSON(700, err)						// err 700 -> header error
 	}
 
-	c.JSON(200, gin.H {
-		//"token": h.Token,  						// this is how you acces a token
-		"message": "Bye @username, your token has been revoked",	// add the user variable
-	})
+	for i, u := range loggedUsers {
+		if h.Token == u.Token {
+			message := fmt.Sprintf("Bye %s, your token has been revoked", u.Username)
+/*
+			if len(loggedUsers) > 1 {
+				loggedUsers = append(loggedUsers[:i], loggedUsers[i + 1:]...)
+			} else {
+				loggedUsers = loggedUsers[:0]
+			}*/
+
+			loggedUsers = append(loggedUsers[:i], loggedUsers[i + 1:]...)
+
+			c.JSON(200, gin.H {
+				//"token": h.Token,  						// this is how you acces a token
+				"message": message,
+			})
+		} else {
+			c.JSON(500, gin.H {					// err 500 -> bad token
+				"message": "Error, not logged in",
+			}
+		}
+	}
 }
 
 type uploadBody struct {
@@ -54,9 +124,7 @@ type uploadBody struct {
 
 func upload(c *gin.Context) {
 	h := tokenHeader{}
-	//body := c.Clone() //c.Request.Body
-//	body := c.FormValue("Body")
-	data := uploadStruct{}
+	data := uploadBody{}
 
 	if err := c.ShouldBindHeader(&h); err != nil {
 		c.JSON(700, err)						// err 700 -> header error
@@ -74,8 +142,16 @@ func upload(c *gin.Context) {
 }
 
 func status(c *gin.Context) {
+	h := tokenHeader{}
+
+	if err := c.ShouldBindHeader(&h); err != nil {
+		c.JSON(700, err)						// err 700 -> header error
+	}
+
+	message := fmt.Sprintf("Hi %s, the DPIP System is Up and Running", h.Token)
+
 	c.JSON(200, gin.H {
-		"message": "Hi #username, the DPIP System is Up and Running",	// add the user variable
+		"message": message,
 		"time": "2015-03-07 11:06:39",					// add the token
 	})
 }
