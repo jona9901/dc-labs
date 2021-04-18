@@ -16,7 +16,7 @@
 	upload
 		upload data by token
 	status
-		mensaje a usuario segun token
+		mensaje a usuario segun token 		----
 # obtener imagenes
 # time stamp funcion status
 # validar si el usuario ya esta logeado

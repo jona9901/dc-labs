@@ -97,24 +97,18 @@ func logout(c *gin.Context) {
 	for i, u := range loggedUsers {
 		if h.Token == u.Token {
 			message := fmt.Sprintf("Bye %s, your token has been revoked", u.Username)
-/*
-			if len(loggedUsers) > 1 {
-				loggedUsers = append(loggedUsers[:i], loggedUsers[i + 1:]...)
-			} else {
-				loggedUsers = loggedUsers[:0]
-			}*/
 
 			loggedUsers = append(loggedUsers[:i], loggedUsers[i + 1:]...)
 
 			c.JSON(200, gin.H {
-				//"token": h.Token,  						// this is how you acces a token
 				"message": message,
 			})
-		} else {
-			c.JSON(500, gin.H {					// err 500 -> bad token
-				"message": "Error, not logged in",
-			}
+			return
 		}
+
+		c.JSON(500, gin.H {					// err 500 -> bad token
+			"message": "Error, not logged in",
+		})
 	}
 }
 
@@ -134,10 +128,59 @@ func upload(c *gin.Context) {
 		c.JSON(800, err)						// err 800 -> body error
 	}
 
-	c.JSON(200, gin.H {
-		"message": data, // "Hi @username, welcome to the DPIP system",	// add the user variable
-		"filename": "image.png",				// add the filename variable
-		"size":  "500kb",					// add the file size
+	for _, u := range loggedUsers {
+		if h.Token == u.Token {
+
+/*			c.Request.ParseMultipartForm(32 << 20)
+
+			file, handler, err := c.Request.FormFile("uploadfile")
+
+			if err != nil {
+				c.JSON(100, gin.H {				// 100 -> file upload error
+					"message": err,
+				})
+				return
+			}
+
+			defer file.Close()
+
+			c.JSON(150, gin.H {
+				"message": handler.Header,
+			})
+			return
+*/
+			c.Request.ParseMultipartForm(32 << 20)
+
+			f, err := os.Open(data.Body)
+			if err != nil {
+				c.JSON(100, gin.H {				// 100 -> file upload error
+					"message": err,
+				})
+				return
+			}
+
+			fi, err := f.Stat()
+			if err != nil {
+				c.JSON(101, gin.H {				// 101 -> file size error
+					"message": err,
+				})
+				return
+			}
+			f.Close()
+
+			size := fmt.Sprintf("%d.kb", fi.Size())
+
+			c.JSON(200, gin.H {
+				"message": "An image has been successfully uploaded",
+				"filename": data.Body,				// add the filename variable
+				"size": size,				// add the file size
+			})
+			return
+		}
+	}
+
+	c.JSON(500, gin.H {					// err 500 -> bad token
+		"message": "Error, not logged in",
 	})
 }
 
@@ -148,11 +191,20 @@ func status(c *gin.Context) {
 		c.JSON(700, err)						// err 700 -> header error
 	}
 
-	message := fmt.Sprintf("Hi %s, the DPIP System is Up and Running", h.Token)
+	for _, u := range loggedUsers {
+		if h.Token == u.Token {
+			message := fmt.Sprintf("Hi %s, the DPIP System is Up and Running", u.Username)
 
-	c.JSON(200, gin.H {
-		"message": message,
-		"time": "2015-03-07 11:06:39",					// add the token
+			c.JSON(200, gin.H {
+				"message": message,
+				"time": time.Now().Format("2006-02-16 15:04:05"),//("2015-03-07 11:06:39"),
+			})
+			return
+		}
+	}
+
+	c.JSON(500, gin.H {					// err 500 -> bad token
+		"message": "Error, not logged in",
 	})
 }
 
