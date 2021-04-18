@@ -1,2 +1,6 @@
-* .mod
-* .todo
+go.mod
+go.sum
+.todo
+server2.go
+
+imgs/

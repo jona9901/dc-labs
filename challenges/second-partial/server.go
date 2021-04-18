@@ -2,115 +2,228 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
+	"io"
+	"time"
 	"net/http"
-	"regexp"
-	"context"
 	"strings"
-	"encoding/base64"
-//	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/dgrijalva/jwt-go"
 )
 
-func newRoute(method, pattern string, handler http.HandlerFunc) route {
-	return route{method, regexp.MustCompile("^" + pattern + "$"), handler}
-}
-
-type route struct {
-	method  string
-	regex   *regexp.Regexp
-	handler http.HandlerFunc
-}
-
-type ctxKey struct{}
-
-func getField(r *http.Request, index int) string {
-    fields := r.Context().Value(ctxKey{}).([]string)
-    return fields[index]
-}
-
-var routes = []route {
+/*
+var routes = [] route {
 	newRoute("GET", "/", home),
 	newRoute("GET", "/login", login),
 	newRoute("GET", "/logout", logout),
 	newRoute("GET", "/upload", upload),
 	newRoute("GET", "/status", status),
 }
+*/
 
-func home(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
-
+type User struct {
+	Username string
+	Password string
+	Token string
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+var loggedUsers []*User
+var files []*os.File
+/*
+A sample user
+*/
 
-	s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-	if len(s) != 2 {
-		http.Error(w, "Not authorized", 401)
-		return
+var defaultUser = User {
+	Username: "username",
+	Password: "password",
+}
+
+func newUser(username string, password string) *User{
+	token, _ := createToken(username)				// handle error
+
+	u := User{
+		Username: username,
+		Password: password,
+		Token: token,
 	}
+	return &u
+}
 
-	b, err := base64.StdEncoding.DecodeString(s[1])
+func createToken(username string) (string, error) {
+	var err error
+
+	os.Setenv("ACCESS_SECRET", "jdnfksdmfksd")			// ad to env file
+
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+	atClaims["username"] = username
+	atClaims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
 	if err != nil {
-		http.Error(w, err.Error(), 401)
+		return "", err
+	}
+	return token, nil
+}
+
+func login(c *gin.Context) {						// asign token
+	username, password, _ := c.Request.BasicAuth()				// If needed Basic auth returns: (username, password string, ok bool)
+
+	if username != defaultUser.Username || password != defaultUser.Password {
+		c.JSON(http.StatusUnauthorized, "Please provide valid credentials")
 		return
 	}
 
-	pair := strings.SplitN(string(b), ":", 2)
-	if len(pair) != 2 {
-		http.Error(w, "Not authorized", 401)
-		return
+	user := newUser(username, password)
+	loggedUsers = append(loggedUsers, user)
+
+	message := fmt.Sprintf("Hi %s welcome to the DPIP system", user.Username)
+
+	c.JSON(200, gin.H {
+		"message": message,
+		"token": user.Token,
+	})
+}
+
+type tokenHeader struct {
+	Token string `header:"Authorization"`
+}
+
+func logout(c *gin.Context) {
+	h := tokenHeader{}
+
+	if err := c.ShouldBindHeader(&h); err != nil {
+		c.JSON(700, err)						// err 700 -> header error
 	}
 
-	if pair[0] != "username" || pair[1] != "password" {
-		http.Error(w, "Not authorized", 401)
-		return
+	for i, u := range loggedUsers {
+		if h.Token == u.Token {
+			message := fmt.Sprintf("Bye %s, your token has been revoked", u.Username)
+
+			loggedUsers = append(loggedUsers[:i], loggedUsers[i + 1:]...)
+
+			c.JSON(200, gin.H {
+				"message": message,
+			})
+			return
+		}
+
+		c.JSON(500, gin.H {					// err 500 -> bad token
+			"message": "Error, not logged in",
+		})
 	}
-	fmt.Fprintf(w, "Login %s", r)
 }
 
-func logout(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Logout")
+type uploadBody struct {
+	Body string `form:"data"`
 }
 
-func upload(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Upload")
+func upload(c *gin.Context) {
+	h := tokenHeader{}
+	data := uploadBody{}
+
+	if err := c.ShouldBindHeader(&h); err != nil {
+		c.JSON(700, err)						// err 700 -> header error
+	}
+
+	if err := c.ShouldBind(&data); err != nil {
+		c.JSON(800, err)						// err 800 -> body error
+	}
+
+	for _, u := range loggedUsers {
+		if h.Token == u.Token {
+			c.Request.ParseMultipartForm(32 << 20)
+
+			f, err := os.Open(data.Body)
+			if err != nil {
+				c.JSON(100, gin.H {				// 100 -> file upload error
+					"message": err,
+				})
+				return
+			}
+
+			defer f.Close()
+
+			body := strings.Split(data.Body, "/")
+			filename := body[len(body) - 1]
+
+			newFile, err := os.Create(filename)
+
+			if err != nil {
+				c.JSON(101, gin.H {				// 101 -> file create error
+					"message": err,
+				})
+				return
+			}
+
+			if _, err := io.Copy(newFile, f); err != nil {
+				c.JSON(102, gin.H {				// 103 -> file copy error
+					"message": err,
+				})
+				return
+
+			}
+
+			files = append(files, newFile)
+
+			fmt.Println(files)
+			fi, err := f.Stat()
+			if err != nil {
+				c.JSON(103, gin.H {				// 103 -> file size error
+					"message": err,
+				})
+				return
+			}
+
+			size := fmt.Sprintf("%d.kb", fi.Size())
+
+			c.JSON(200, gin.H {
+				"message": "An image has been successfully uploaded",
+				"filename": filename,				// add the filename variable
+				"size": size,
+			})
+			return
+		}
+	}
+
+	c.JSON(500, gin.H {					// err 500 -> bad token
+		"message": "Error, not logged in",
+	})
 }
 
-func status(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Status")
-}
+func status(c *gin.Context) {
+	h := tokenHeader{}
 
-func Serve(w http.ResponseWriter, r *http.Request) {
-    var allow []string
-    for _, route := range routes {
-        matches := route.regex.FindStringSubmatch(r.URL.Path)
-        if len(matches) > 0 {
-            if r.Method != route.method {
-                allow = append(allow, route.method)
-                continue
-            }
-            ctx := context.WithValue(r.Context(), ctxKey{}, matches[1:])
-            route.handler(w, r.WithContext(ctx))
-            return
-        }
-    }
-    if len(allow) > 0 {
-        w.Header().Set("Allow", strings.Join(allow, ", "))
-        http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
-        return
-    }
-    http.NotFound(w, r)
+	if err := c.ShouldBindHeader(&h); err != nil {
+		c.JSON(700, err)						// err 700 -> header error
+	}
+
+	for _, u := range loggedUsers {
+		if h.Token == u.Token {
+			message := fmt.Sprintf("Hi %s, the DPIP System is Up and Running", u.Username)
+
+			c.JSON(200, gin.H {
+				"message": message,
+				"time": time.Now().Format("2006-Jan-02 15:04:05"),//("2015-03-07 11:06:39"),
+			})
+			return
+		}
+	}
+
+	c.JSON(500, gin.H {					// err 500 -> bad token
+		"message": "Error, not logged in",
+	})
 }
 
 func main() {
 	fmt.Printf("Starting server at port 8080\n")
 
-	http.HandleFunc("/", Serve)
+	server := gin.Default()
 
+	server.GET("/login", login)
+	server.GET("/logout", logout)
+	server.GET("/upload", upload)
+	server.GET("/status", status)
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		 log.Fatal(err)
-	}
+	server.Run()
 }
