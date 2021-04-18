@@ -147,7 +147,7 @@ func upload(c *gin.Context) {
 			body := strings.Split(data.Body, "/")
 			filename := body[len(body) - 1]
 
-			newFile, err := os.Create(filename)
+			newFile, err := os.Create("./imgs/" + filename)//fmt.Sprintf("/imgs/%s", filename))
 
 			if err != nil {
 				c.JSON(101, gin.H {				// 101 -> file create error
