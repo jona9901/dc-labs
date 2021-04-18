@@ -28,7 +28,7 @@ type User struct {
 }
 
 var loggedUsers []*User
-var files []*os.File
+//var files []*os.File
 /*
 A sample user
 */
@@ -164,9 +164,8 @@ func upload(c *gin.Context) {
 
 			}
 
-			files = append(files, newFile)
+			//files = append(files, newFile)
 
-			fmt.Println(files)
 			fi, err := f.Stat()
 			if err != nil {
 				c.JSON(103, gin.H {				// 103 -> file size error
