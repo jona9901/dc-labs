@@ -17,10 +17,10 @@ The input in console should be as it follows:
 To login:
 	curl -u username:password http://localhost:8080/login
 
-To logout
+To logout:
 	curl -H "Authorization: Bearer <ACCESS_TOKEN>" http://localhost:8080/logout
 
-To make an upload
+To make an upload:
 	curl -F 'data=@/path/to/local/image.png' -H "Authorization: Bearer <ACCESS_TOKEN>" http://localhost:8080/upload
 
 To get status
