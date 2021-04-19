@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 	"net/http"
-	"strings"
+	//"strings"
 	"github.com/gin-gonic/gin"
 	"github.com/dgrijalva/jwt-go"
 )
@@ -113,23 +113,168 @@ func logout(c *gin.Context) {
 		})
 	}
 }
-
+/*
 type uploadBody struct {
 	Body string `form:"data"`
+}
+*/
+type uploadBody struct {
+	Body string `content-type: "JSON" form:"data"`
 }
 
 func upload(c *gin.Context) {
 	h := tokenHeader{}
-	data := uploadBody{}
+	//data := uploadBody{}
 
 	if err := c.ShouldBindHeader(&h); err != nil {
 		c.JSON(700, err)						// err 700 -> header error
+		return
 	}
+	/*
 
 	if err := c.ShouldBind(&data); err != nil {
 		c.JSON(800, err)						// err 800 -> body error
+		return
+	}
+	*/
+
+/*
+*
+*
+*
+*/
+
+/*
+	multipartFile, err := c.FormFile("data")
+
+	if err != nil {
+		c.JSON(100, gin.H {				// 100 -> file upload error
+			"message": err,
+		})
 	}
 
+	f, err := multipartFile.Open()
+
+	if err != nil {
+		c.JSON(104, gin.H {
+			"message": err,				// 104 -> file open error
+		})
+	}
+
+	newFile, err := os.Create("./imgs/" + multipartFile.Filename)
+
+	if err != nil {
+		c.JSON(101, gin.H {				// 101 -> file create error
+			"message": err,
+		})
+		return
+	}
+
+	if _, err := io.Copy(newFile, f); err != nil {
+		c.JSON(102, gin.H {				// 102 -> file copy error
+			"message": err,
+		})
+		return
+
+	}
+
+	fi, err := newFile.Stat()
+	if err != nil {
+		c.JSON(103, gin.H {				// 103 -> file size error
+			"message": err,
+		})
+		return
+	}
+
+	size := fmt.Sprintf("%d bytes", fi.Size())
+
+	c.JSON(200, gin.H {
+		"message": "An image has been successfully uploaded",
+		"filename": multipartFile.Filename,				// add the filename variable
+		"size": size,
+	})
+
+	f.Close()
+	newFile.Close()
+	return
+*/
+
+
+
+/*
+	if err := c.ShouldBind(&data); err != nil {
+		c.JSON(800, err)						// err 800 -> body error
+		return
+	}
+
+	fmt.Println(data.Body)
+*/
+/*
+*
+*
+*
+*/
+
+
+	for _, u := range loggedUsers {
+		if h.Token == u.Token {
+			multipartFile, err := c.FormFile("data")
+
+			if err != nil {
+				c.JSON(100, gin.H {				// 100 -> file upload error
+					"message": err,
+				})
+			}
+
+			f, err := multipartFile.Open()
+
+			if err != nil {
+				c.JSON(104, gin.H {
+					"message": err,				// 104 -> file open error
+				})
+			}
+
+			newFile, err := os.Create("./imgs/" + multipartFile.Filename)
+
+			if err != nil {
+				c.JSON(101, gin.H {				// 101 -> file create error
+					"message": err,
+				})
+				return
+			}
+
+			if _, err := io.Copy(newFile, f); err != nil {
+				c.JSON(102, gin.H {				// 102 -> file copy error
+					"message": err,
+				})
+				return
+
+			}
+
+			fi, err := newFile.Stat()
+			if err != nil {
+				c.JSON(103, gin.H {				// 103 -> file size error
+					"message": err,
+				})
+				return
+			}
+
+			size := fmt.Sprintf("%d bytes", fi.Size())
+
+			c.JSON(200, gin.H {
+				"message": "An image has been successfully uploaded",
+				"filename": multipartFile.Filename,				// add the filename variable
+				"size": size,
+			})
+
+			f.Close()
+			newFile.Close()
+			return
+
+		}
+	}
+
+/*
 	for _, u := range loggedUsers {
 		if h.Token == u.Token {
 			c.Request.ParseMultipartForm(32 << 20)
@@ -157,7 +302,7 @@ func upload(c *gin.Context) {
 			}
 
 			if _, err := io.Copy(newFile, f); err != nil {
-				c.JSON(102, gin.H {				// 103 -> file copy error
+				c.JSON(102, gin.H {				// 102 -> file copy error
 					"message": err,
 				})
 				return
@@ -184,7 +329,7 @@ func upload(c *gin.Context) {
 			return
 		}
 	}
-
+*/
 	c.JSON(500, gin.H {					// err 500 -> bad token
 		"message": "Error, not logged in",
 	})
@@ -221,8 +366,10 @@ func main() {
 
 	server.GET("/login", login)
 	server.GET("/logout", logout)
-	server.GET("/upload", upload)
 	server.GET("/status", status)
+
+	server.MaxMultipartMemory = 8 << 20			// 8 MiB
+	server.POST("/upload", upload)
 
 	server.Run()
 }
