@@ -1,4 +1,4 @@
-// Copyright © 2016 Alan A. A. Donovan & Brian W. Kernighan.
+// Copyright Â© 2016 Alan A. A. Donovan & Brian W. Kernighan.
 // License: https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 // See page 241.
@@ -13,10 +13,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-
+	"strconv"
+	"strings"
 	"gopl.io/ch5/links"
 )
 
@@ -25,16 +25,22 @@ import (
 // enforce a limit of 20 concurrent requests.
 var tokens = make(chan struct{}, 20)
 
-func crawl(url string) []string {
-	fmt.Println(url)
-	tokens <- struct{}{} // acquire a token
-	list, err := links.Extract(url)
-	<-tokens // release the token
+func crawl(url string,depthLimit int,  height int) []string {
+	if height <= depthLimit {
+		log.Println(url)
 
-	if err != nil {
-		log.Print(err)
+		tokens <- struct{}{} // acquire a token
+		list, err := links.Extract(url)
+		<-tokens // release the token
+		if err != nil {
+			log.Print(err)
+		}
+		return list
+	} else { //Overpassed the depth limit
+		var list []string
+		return list
 	}
-	return list
+
 }
 
 //!-sema
@@ -46,22 +52,49 @@ func main() {
 
 	// Start with the command-line arguments.
 	n++
-	go func() { worklist <- os.Args[1:] }()
+
+	filename := strings.Split(os.Args[2], "=")
+	file, err := os.OpenFile(filename[1], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		log.Fatalf("failed creating file: %s", err)
+	}
+
+	log.SetOutput(file)
+	log.SetFlags(0)
+
+	depthnum := strings.Split(os.Args[1], "=")
+
+	go func() { worklist <- os.Args[3:] }()
+
+	depthLimit, _ := strconv.Atoi(depthnum[1])
 
 	// Crawl the web concurrently.
 	seen := make(map[string]bool)
+	urlDep := make(map[string]int)
+	height := 0
+
+	//sampledata := []string
+
 	for ; n > 0; n-- {
 		list := <-worklist
 		for _, link := range list {
+
 			if !seen[link] {
 				seen[link] = true
 				n++
+				aux := height + 1
+				urlDep[link] = aux
 				go func(link string) {
-					worklist <- crawl(link)
+					worklist <- crawl(link, depthLimit,  height)
+
 				}(link)
 			}
+
 		}
+		height++
 	}
+
 }
 
 //!-
