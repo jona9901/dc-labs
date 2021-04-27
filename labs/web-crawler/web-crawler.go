@@ -74,8 +74,6 @@ func main() {
 	urlDep := make(map[string]int)
 	height := 0
 
-	//sampledata := []string
-
 	for ; n > 0; n-- {
 		list := <-worklist
 		for _, link := range list {
