@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/CodersSquad/dc-labs/challenges/third-partial/controller"
-	"github.com/CodersSquad/dc-labs/challenges/third-partial/scheduler"
+	"github.com/jona9901/dc-labs/challenges/third-partial/controller"
+	"github.com/jona9901/dc-labs/challenges/third-partial/scheduler"
 )
 
 func main() {
