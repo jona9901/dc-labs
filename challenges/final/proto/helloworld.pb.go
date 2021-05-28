@@ -18,7 +18,7 @@
 // 	protoc        v3.14.0
 // source: helloworld.proto
 
-package proto
+package filters
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
