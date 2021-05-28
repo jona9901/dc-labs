@@ -23,7 +23,8 @@ var (
 
 // server is used to implement helloworld.GreeterServer.
 type server struct {
-	pb.UnimplementedGreeterServer
+	//pb.UnimplementedGreeterServer
+	pb.UnimplementedFilterServer
 }
 
 var (
@@ -40,10 +41,29 @@ func die(format string, v ...interface{}) {
 }
 
 // SayHello implements helloworld.GreeterServer
+/*
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	log.Printf("RPC: Received: %v", in.GetName())
 	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
 }
+*/
+
+func (s *server) Filter(ctx context.Context, in *pb.FilterRequest) (*pb.FilterReply, error) {
+	log.Printf("RPC: Filter: %v", in.GetFilterName())
+	return &pb.FilterReply{Message: "Hello " + in.GetFilterName()}, nil
+}
+
+/*
+func (s *server) InvertFilter(ctx context.Context, in *pb.FilterRequest) (*pb.FilterReply, error) {
+	log.Printf("RPC: Filter: %v", in.GetFilterName())
+	return &pb.FilterReply{Message: "Hello " + in.GetFilterName()}, nil
+}
+
+func (s *server) BlurFilter(ctx context.Context, in *pb.FilterRequest) (*pb.FilterReply, error) {
+	log.Printf("RPC: Filter: %v", in.GetFilterName())
+	return &pb.FilterReply{Message: "Hello " + in.GetFilterName()}, nil
+}
+*/
 
 func init() {
 	flag.StringVar(&controllerAddress, "controller", "tcp://localhost:40899", "Controller address")
@@ -108,7 +128,8 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterGreeterServer(s, &server{})
+	//pb.RegisterGreeterServer(s, &server{})
+	pb.RegisterFilterServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
