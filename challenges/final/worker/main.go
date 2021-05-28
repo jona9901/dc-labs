@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 
-	pb "github.com/CodersSquad/dc-labs/challenges/third-partial/proto"
+	pb "github.com/jona9901/dc-labs/challenges/third-partial/proto"
 	"go.nanomsg.org/mangos"
 	"go.nanomsg.org/mangos/protocol/sub"
 	"google.golang.org/grpc"
@@ -27,9 +27,11 @@ type server struct {
 }
 
 var (
-	controllerAddress = ""
-	workerName        = ""
-	tags              = ""
+	controllerAddress	= ""
+	workerName		= ""
+	tags			= ""
+	imageStoreEndpoint	= ""
+	imageStoreToken		= ""
 )
 
 func die(format string, v ...interface{}) {
@@ -47,6 +49,8 @@ func init() {
 	flag.StringVar(&controllerAddress, "controller", "tcp://localhost:40899", "Controller address")
 	flag.StringVar(&workerName, "worker-name", "hard-worker", "Worker Name")
 	flag.StringVar(&tags, "tags", "gpu,superCPU,largeMemory", "Comma-separated worker tags")
+	flag.StringVar(&imageStoreEndpoint, "image-store-endpoint", "tcp://localhost:8080", "image store endpoint")
+	flag.StringVar(&imageStoreToken, "image-store-token", "1234", "Image token")
 }
 
 // joinCluster is meant to join the controller message-passing server

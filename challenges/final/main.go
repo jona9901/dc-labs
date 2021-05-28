@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"time"
 
-//	"github.com/jona9901/dc-labs/challenges/third-partial/api"
-	"github.com/jona9901/dc-labs/challenges/third-partial/controller"
-	"github.com/jona9901/dc-labs/challenges/third-partial/scheduler"
+//	"github.com/jona9901/dc-labs/challenges/final/api"
+	"github.com/jona9901/dc-labs/challenges/final/controller"
+	"github.com/jona9901/dc-labs/challenges/final/scheduler"
 )
 
 func main() {

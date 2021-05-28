@@ -1,5 +1,5 @@
-package api
-
+//package api
+package main
 import (
 	"fmt"
 	"os"
@@ -109,13 +109,15 @@ func logout(c *gin.Context) {
 
 // struct to recieve the data (file to upload path) from the body
 type uploadBody struct {
-	Body string `content-type: "JSON" form:"data"`
+	Body string `content-type: "JSON" form:"data" Form:"form-data"`
 }
 
-// upload API endpoint
-func upload(c *gin.Context) {
+// image API endpoint, this method allow the user to upload an image
+func image(c *gin.Context) {
 	h := tokenHeader{}
-	//data := uploadBody{}
+//	data := uploadBody{}
+//	c.ShouldBind(&data)
+//	fmt.Println(data.Body)
 
 	if err := c.ShouldBindHeader(&h); err != nil {
 		c.JSON(700, err)						// err 700 -> header error
@@ -125,6 +127,7 @@ func upload(c *gin.Context) {
 	for _, u := range loggedUsers {
 		if h.Token == u.Token {
 			multipartFile, err := c.FormFile("data")
+			fmt.Println(multipartFile)
 
 			if err != nil {
 				c.JSON(100, gin.H {				// 100 -> file upload error
@@ -186,6 +189,10 @@ func upload(c *gin.Context) {
 	})
 }
 
+func download(c *gin.Context) {
+
+}
+
 // status API enpoint
 func status(c *gin.Context) {
 	h := tokenHeader{}
@@ -211,6 +218,33 @@ func status(c *gin.Context) {
 	})
 }
 
+func main() {
+
+	r := gin.Default()
+
+	r.POST("/login", login)
+	r.GET("/logout", logout)
+	r.GET("/status", status)
+
+	r.MaxMultipartMemory = 8 << 20
+	r.POST("/image", image)
+
+	r.Run()
+}
+
+/*
+func Start(jobs chan string)  {
+	r := gin.Default()
+	jobName = jobs
+
+	r.POST("/login", login)
+	r.GET("/logout", logout)
+	r.GET("/statuts", status)
+	r.POST("/image", upload)
+
+	r.Run() // listen and serve on 0.0.0.0:8080
+}*/
+
 /*
 errors
 err 100 -> file upload error
@@ -218,4 +252,13 @@ err 101 -> file create error
 err 102 -> file copy error
 err 103 -> file size error
 err 104 -> file open error
+*/
+
+/*
+
+/upload
+/download
+/results/<workload_id>
+/workload/filter
+
 */

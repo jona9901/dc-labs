@@ -24,6 +24,30 @@ func date() string {
 	return time.Now().Format(time.ANSIC)
 }
 
+/*
+func createWorker() string {
+
+}
+*/
+
+/*
+func getWorker() string{
+
+}
+*/
+
+/*
+func setWorkerValue() string {
+
+}
+*/
+
+/*
+func deleteWorker() string{
+
+}
+*/
+
 func Start() {
 	var sock mangos.Socket
 	var err error
