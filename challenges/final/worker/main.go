@@ -23,8 +23,8 @@ var (
 
 // server is used to implement helloworld.GreeterServer.
 type server struct {
-	//pb.UnimplementedGreeterServer
-	pb.UnimplementedFiltersServer
+	pb.UnimplementedGreeterServer
+	//pb.UnimplementedFiltersServer
 }
 
 var (

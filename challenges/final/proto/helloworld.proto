@@ -18,7 +18,7 @@ option java_multiple_files = true;
 option java_package = "io.grpc.examples.helloworld";
 option java_outer_classname = "HelloWorldProto";
 
-option go_package = "github.com/jona9901/dc-labs/challenges/final/proto/";
+option go_package = "github.com/jona9901/dc-labs/challenges/final/proto";
 
 package helloworld;
 
