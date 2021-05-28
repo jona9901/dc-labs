@@ -14,94 +14,6 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// GreeterClient is the client API for Greeter service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type GreeterClient interface {
-	// Sends a greeting
-	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
-}
-
-type greeterClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewGreeterClient(cc grpc.ClientConnInterface) GreeterClient {
-	return &greeterClient{cc}
-}
-
-func (c *greeterClient) SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error) {
-	out := new(HelloReply)
-	err := c.cc.Invoke(ctx, "/helloworld.Greeter/SayHello", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// GreeterServer is the server API for Greeter service.
-// All implementations must embed UnimplementedGreeterServer
-// for forward compatibility
-type GreeterServer interface {
-	// Sends a greeting
-	SayHello(context.Context, *HelloRequest) (*HelloReply, error)
-	mustEmbedUnimplementedGreeterServer()
-}
-
-// UnimplementedGreeterServer must be embedded to have forward compatible implementations.
-type UnimplementedGreeterServer struct {
-}
-
-func (UnimplementedGreeterServer) SayHello(context.Context, *HelloRequest) (*HelloReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
-}
-func (UnimplementedGreeterServer) mustEmbedUnimplementedGreeterServer() {}
-
-// UnsafeGreeterServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GreeterServer will
-// result in compilation errors.
-type UnsafeGreeterServer interface {
-	mustEmbedUnimplementedGreeterServer()
-}
-
-func RegisterGreeterServer(s grpc.ServiceRegistrar, srv GreeterServer) {
-	s.RegisterService(&Greeter_ServiceDesc, srv)
-}
-
-func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GreeterServer).SayHello(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/helloworld.Greeter/SayHello",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GreeterServer).SayHello(ctx, req.(*HelloRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// Greeter_ServiceDesc is the grpc.ServiceDesc for Greeter service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var Greeter_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "helloworld.Greeter",
-	HandlerType: (*GreeterServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "SayHello",
-			Handler:    _Greeter_SayHello_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "helloworld.proto",
-}
-
 // FiltersClient is the client API for Filters service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
@@ -120,7 +32,7 @@ func NewFiltersClient(cc grpc.ClientConnInterface) FiltersClient {
 
 func (c *filtersClient) Invert(ctx context.Context, in *FilterRequest, opts ...grpc.CallOption) (*FilterReply, error) {
 	out := new(FilterReply)
-	err := c.cc.Invoke(ctx, "/helloworld.Filters/Invert", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/filters.Filters/Invert", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +41,7 @@ func (c *filtersClient) Invert(ctx context.Context, in *FilterRequest, opts ...g
 
 func (c *filtersClient) Blur(ctx context.Context, in *FilterRequest, opts ...grpc.CallOption) (*FilterReply, error) {
 	out := new(FilterReply)
-	err := c.cc.Invoke(ctx, "/helloworld.Filters/Blur", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/filters.Filters/Blur", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +90,7 @@ func _Filters_Invert_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/helloworld.Filters/Invert",
+		FullMethod: "/filters.Filters/Invert",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FiltersServer).Invert(ctx, req.(*FilterRequest))
@@ -196,7 +108,7 @@ func _Filters_Blur_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/helloworld.Filters/Blur",
+		FullMethod: "/filters.Filters/Blur",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FiltersServer).Blur(ctx, req.(*FilterRequest))
@@ -208,7 +120,7 @@ func _Filters_Blur_Handler(srv interface{}, ctx context.Context, dec func(interf
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Filters_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "helloworld.Filters",
+	ServiceName: "filters.Filters",
 	HandlerType: (*FiltersServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
